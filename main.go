@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -15,20 +16,20 @@ import (
 
 // StringProperties holds the computed properties of an analyzed string
 type StringProperties struct {
-	Length               int            `json:"length"`
-	IsPalindrome         bool           `json:"is_palindrome"`
-	UniqueCharacters     int            `json:"unique_characters"`
-	WordCount            int            `json:"word_count"`
-	SHA256Hash           string         `json:"sha256_hash"`
+	Length                int            `json:"length"`
+	IsPalindrome          bool           `json:"is_palindrome"`
+	UniqueCharacters      int            `json:"unique_characters"`
+	WordCount             int            `json:"word_count"`
+	SHA256Hash            string         `json:"sha256_hash"`
 	CharacterFrequencyMap map[string]int `json:"character_frequency_map"`
 }
 
 // AnalyzedString represents a stored analyzed string with metadata
 type AnalyzedString struct {
-	ID         string            `json:"id"`
-	Value      string            `json:"value"`
-	Properties StringProperties  `json:"properties"`
-	CreatedAt  time.Time         `json:"created_at"`
+	ID         string           `json:"id"`
+	Value      string           `json:"value"`
+	Properties StringProperties `json:"properties"`
+	CreatedAt  time.Time        `json:"created_at"`
 }
 
 // CreateStringRequest is the request body for creating/analyzing a string
@@ -38,10 +39,10 @@ type CreateStringRequest struct {
 
 // FilterParams holds query parameters for filtering
 type FilterParams struct {
-	IsPalindrome     *bool   `form:"is_palindrome"`
-	MinLength        *int    `form:"min_length"`
-	MaxLength        *int    `form:"max_length"`
-	WordCount        *int    `form:"word_count"`
+	IsPalindrome      *bool   `form:"is_palindrome"`
+	MinLength         *int    `form:"min_length"`
+	MaxLength         *int    `form:"max_length"`
+	WordCount         *int    `form:"word_count"`
 	ContainsCharacter *string `form:"contains_character"`
 }
 
@@ -53,10 +54,10 @@ type NaturalLanguageQuery struct {
 
 // FilterResponse wraps filtered results with metadata
 type FilterResponse struct {
-	Data          []AnalyzedString         `json:"data"`
-	Count         int                      `json:"count"`
-	FiltersApplied map[string]interface{}  `json:"filters_applied,omitempty"`
-	InterpretedQuery *NaturalLanguageQuery `json:"interpreted_query,omitempty"`
+	Data             []AnalyzedString       `json:"data"`
+	Count            int                    `json:"count"`
+	FiltersApplied   map[string]interface{} `json:"filters_applied,omitempty"`
+	InterpretedQuery *NaturalLanguageQuery  `json:"interpreted_query,omitempty"`
 }
 
 // StringStore is a simple in-memory storage for analyzed strings
@@ -71,8 +72,11 @@ func main() {
 	router.GET("/strings/filter-by-natural-language", filterByNaturalLanguage)
 	router.GET("/strings/:value", getString)
 	router.DELETE("/strings/:value", deleteString)
-
-	router.Run(":8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	router.Run(":" + port)
 }
 
 // createString handles POST /strings
@@ -102,10 +106,10 @@ func createString(c *gin.Context) {
 
 	// Create and store the analyzed string
 	analyzed := &AnalyzedString{
-		ID:        hash,
-		Value:     req.Value,
+		ID:         hash,
+		Value:      req.Value,
 		Properties: props,
-		CreatedAt: time.Now().UTC(),
+		CreatedAt:  time.Now().UTC(),
 	}
 
 	stringStore[hash] = analyzed
@@ -171,8 +175,8 @@ func getAllStrings(c *gin.Context) {
 	}
 
 	response := FilterResponse{
-		Data:          results,
-		Count:         len(results),
+		Data:           results,
+		Count:          len(results),
 		FiltersApplied: filtersApplied,
 	}
 
@@ -217,9 +221,9 @@ func filterByNaturalLanguage(c *gin.Context) {
 	}
 
 	response := FilterResponse{
-		Data:                results,
-		Count:               len(results),
-		InterpretedQuery:    interpretedQuery,
+		Data:             results,
+		Count:            len(results),
+		InterpretedQuery: interpretedQuery,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -254,11 +258,11 @@ func analyzeString(value string) StringProperties {
 	charFreqMap := buildCharacterFrequencyMap(value)
 
 	return StringProperties{
-		Length:               length,
-		IsPalindrome:         isPalindrome,
-		UniqueCharacters:     uniqueChars,
-		WordCount:            wordCount,
-		SHA256Hash:           sha256Hash,
+		Length:                length,
+		IsPalindrome:          isPalindrome,
+		UniqueCharacters:      uniqueChars,
+		WordCount:             wordCount,
+		SHA256Hash:            sha256Hash,
 		CharacterFrequencyMap: charFreqMap,
 	}
 }
